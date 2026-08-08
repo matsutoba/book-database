@@ -13,3 +13,28 @@
 - Prisma 7 では接続文字列は `prisma.config.ts` 経由で読み込まれる（`schema.prisma` の `datasource` ブロックには直接書かない）。`prisma.config.ts` は `dotenv/config` を import して `.env` を読み込む。
 - 生成された Prisma Client の出力先は `lib/generated/prisma`（gitignore 対象、コミットしない）。
 - マイグレーションは `prisma/migrations` にコミットする。
+
+### マイグレーションの実行方法
+
+- `schema.prisma` を編集 → 以下のコマンドでマイグレーションを作成・適用するのが基本の流れ。
+
+```bash
+# スキーマ変更時（開発環境）
+# schema.prisma との差分から migrations/ 配下に SQL を生成し、DB に適用、Prisma Client も再生成する
+pnpm exec prisma migrate dev --name <わかりやすい名前>
+
+# 生成される SQL を先に確認・編集してから適用したい場合
+pnpm exec prisma migrate dev --name <名前> --create-only
+pnpm exec prisma migrate dev
+
+# 本番/CI など、差分検出はせず既存の migrations/ を適用するだけの場合
+pnpm exec prisma migrate deploy
+
+# スキーマもDBも変えず、Prisma Client の型だけ再生成したい場合
+pnpm exec prisma generate
+
+# 開発DBを作り直す場合（破壊的。ローカル DB の中身は全て消える）
+pnpm exec prisma migrate reset
+```
+
+- `prisma migrate dev` はスキーマ差分検出のためにシャドウDBを一時作成する。そのため `DATABASE_URL` の DB ユーザーには `CREATE` 権限が必要（Docker Compose の `MYSQL_USER`/`MYSQL_PASSWORD` で作成されるユーザーはデフォルトでは対象DBのみの権限のため、必要に応じて `GRANT ALL PRIVILEGES ON *.* TO '<user>'@'%';` を付与する）。

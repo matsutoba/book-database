@@ -11,3 +11,86 @@ generator client {
 datasource db {
   provider = "mysql"
 }
+
+// 書籍情報の取得元
+enum BookSourceType {
+  NDL_JAPANESE_BOOKS // NDL全国書誌
+  NDL_SEARCH_API // 国立国会図書館サーチAPI
+  JPRO_BOOKS // JPRO/Books（出版情報登録センター）
+  PUBLISHER // 出版社公式情報
+}
+
+model Publisher {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(255)
+  books     Book[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("publishers")
+}
+
+model Author {
+  id          Int          @id @default(autoincrement())
+  name        String       @db.VarChar(255)
+  nameKana    String?      @db.VarChar(255)
+  bookAuthors BookAuthor[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([name])
+  @@map("authors")
+}
+
+// ソースを統合した正規化済みの書籍情報
+model Book {
+  id            Int          @id @default(autoincrement())
+  isbn13        String?      @unique @db.VarChar(13)
+  title         String       @db.VarChar(512)
+  subtitle      String?      @db.VarChar(512)
+  publisherId   Int?
+  publisher     Publisher?   @relation(fields: [publisherId], references: [id])
+  publishedDate DateTime?    @db.Date
+  seriesName    String?      @db.VarChar(255)
+  volume        String?      @db.VarChar(50)
+  price         Int?
+  coverImageUrl String?      @db.VarChar(1024)
+  description   String?      @db.Text
+  bookAuthors   BookAuthor[]
+  sources       BookSource[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([publishedDate])
+  @@map("books")
+}
+
+model BookAuthor {
+  bookId   Int
+  authorId Int
+  role     String? @db.VarChar(50) // 著, 編, 訳 など
+  order    Int     @default(0)
+
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  author Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, authorId])
+  @@map("book_authors")
+}
+
+// 各ソースから取得した生データ（1ソースレコード = 1書籍とは限らないためBookに多対1で紐付け）
+model BookSource {
+  id         Int            @id @default(autoincrement())
+  sourceType BookSourceType
+  sourceId   String         @db.VarChar(255)
+  bookId     Int
+  book       Book           @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  rawData    Json
+  fetchedAt  DateTime
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@unique([sourceType, sourceId])
+  @@index([bookId])
+  @@map("book_sources")
+}
