@@ -1,19 +1,56 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useInView } from "react-intersection-observer";
+import type { BookRow } from "@/lib/books";
 import styles from "./BookTable.module.css";
 
-type BookRow = {
-  id: number;
-  title: string;
-  subtitle: string | null;
-  authors: string[];
-  publisherName: string | null;
-  publishedDate: Date | null;
-};
-
 type BookTableProps = {
-  books: BookRow[];
+  initialBooks: BookRow[];
+  initialHasMore: boolean;
 };
 
-export function BookTable({ books }: BookTableProps) {
+type BooksResponse = {
+  books: (Omit<BookRow, "publishedDate"> & { publishedDate: string | null })[];
+  hasMore: boolean;
+};
+
+export function BookTable({ initialBooks, initialHasMore }: BookTableProps) {
+  const [books, setBooks] = useState(initialBooks);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const isLoadingRef = useRef(false);
+  const { ref, inView } = useInView();
+
+  useEffect(() => {
+    if (!inView || !hasMore || isLoadingRef.current) {
+      return;
+    }
+
+    let cancelled = false;
+    isLoadingRef.current = true;
+
+    fetch(`/api/books?skip=${books.length}`)
+      .then((response) => response.json() as Promise<BooksResponse>)
+      .then((data) => {
+        if (cancelled) {
+          return;
+        }
+        const nextBooks = data.books.map((book) => ({
+          ...book,
+          publishedDate: book.publishedDate ? new Date(book.publishedDate) : null,
+        }));
+        setBooks((prev) => [...prev, ...nextBooks]);
+        setHasMore(data.hasMore);
+      })
+      .finally(() => {
+        isLoadingRef.current = false;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [inView, hasMore, books.length]);
+
   if (books.length === 0) {
     return <p className={styles.empty}>書籍がありません</p>;
   }
@@ -43,6 +80,13 @@ export function BookTable({ books }: BookTableProps) {
             <td className={styles.date}>{formatPublishedDate(book.publishedDate)}</td>
           </tr>
         ))}
+        {hasMore && (
+          <tr ref={ref}>
+            <td className={styles.loading} colSpan={4}>
+              読み込み中...
+            </td>
+          </tr>
+        )}
       </tbody>
     </table>
   );
