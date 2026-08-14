@@ -23,6 +23,10 @@
   text-align: center;
 }
 
+.coverHeader {
+  width: 7.5rem;
+}
+
 .row td {
   padding: 1.375rem 1.25rem;
   border-bottom: 1px solid #f1f2f4;
@@ -61,6 +65,16 @@
   color: #4b5054;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+.cover {
+  text-align: center;
+}
+
+.coverImage {
+  width: 5.5rem;
+  height: 8rem;
+  object-fit: cover;
 }
 
 .empty {

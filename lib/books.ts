@@ -17,6 +17,7 @@ export type BookRow = {
   authors: string[];
   publisherName: string | null;
   publishedDate: Date | null;
+  coverImageUrl: string | null;
 };
 
 export type BookRowsPage = {
@@ -45,5 +46,6 @@ function mapBookToRow(book: BookWithRelations): BookRow {
     authors: book.bookAuthors.map((bookAuthor) => bookAuthor.author.name),
     publisherName: book.publisher?.name ?? null,
     publishedDate: book.publishedDate,
+    coverImageUrl: book.coverImageUrl,
   };
 }

@@ -20,16 +20,20 @@ export function BookTable({ initialBooks, initialHasMore }: BookTableProps) {
     <table className={styles.table}>
       <thead>
         <tr>
+          <th className={styles.dateHeader}>発行日</th>
           <th className={styles.indexHeader} aria-hidden="true" />
           <th className={styles.titleHeader}>書籍タイトル / 著者</th>
           <th className={styles.publisherHeader}>出版社</th>
-          <th className={styles.dateHeader}>発行日</th>
+          <th className={styles.coverHeader} aria-hidden="true" />
         </tr>
       </thead>
       <tbody>
         {books.map((book, index) => (
           <tr key={book.id} className={styles.row}>
-            <td className={styles.index}>{String(index + 1).padStart(2, "0")}</td>
+            <td className={styles.date}>{formatPublishedDate(book.publishedDate)}</td>
+            <td className={styles.cover}>
+              {book.coverImageUrl && <img className={styles.coverImage} src={`/api/books/${book.id}/cover`} alt="" />}
+            </td>
             <td className={styles.titleCell}>
               <div className={styles.title}>
                 {book.title}
@@ -38,12 +42,11 @@ export function BookTable({ initialBooks, initialHasMore }: BookTableProps) {
               {book.authors.length > 0 && <div className={styles.authors}>{book.authors.join(" / ")}</div>}
             </td>
             <td className={styles.publisher}>{book.publisherName ?? "-"}</td>
-            <td className={styles.date}>{formatPublishedDate(book.publishedDate)}</td>
           </tr>
         ))}
         {hasNextPage && (
           <tr ref={sentinelRef}>
-            <td className={styles.loading} colSpan={4}>
+            <td className={styles.loading} colSpan={5}>
               読み込み中...
             </td>
           </tr>
@@ -57,5 +60,7 @@ function formatPublishedDate(date: Date | null): string {
   if (!date) {
     return "-";
   }
-  return `${date.getUTCFullYear()}年${date.getUTCMonth() + 1}月${date.getUTCDate()}日`;
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${date.getUTCFullYear()}/${month}/${day}`;
 }
