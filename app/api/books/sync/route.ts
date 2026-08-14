@@ -1,16 +1,41 @@
 import { NextResponse } from "next/server";
 import { BookSourceType, type Prisma } from "@/lib/generated/prisma/client";
 import { parseDcndlRecord, type ParsedDcndlRecord } from "@/lib/ndl/dcndl";
+import { fetchOpenBdCovers } from "@/lib/openbd/client";
 import { prisma } from "@/lib/prisma";
 import { buildMonthlyNdcQuery, isWithinRecordLimit, searchSru } from "@/lib/ndl/sru";
 
 export const dynamic = "force-dynamic";
+// Vercel Hobbyプランのserverless function実行時間上限（Pro以上ならもっと長く取れる）
+export const maxDuration = 60;
 
 // NDC 007: 情報科学（IT関連書籍とみなす分類）
 const IT_NDC = "007";
 const PAGE_SIZE = 200;
 
-export async function POST() {
+function isAuthorized(request: Request): boolean {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return true;
+  }
+  return request.headers.get("authorization") === `Bearer ${cronSecret}`;
+}
+
+export async function GET(request: Request) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return NextResponse.json(await syncBooks());
+}
+
+export async function POST(request: Request) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return NextResponse.json(await syncBooks());
+}
+
+async function syncBooks() {
   const now = new Date();
   const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const query = buildMonthlyNdcQuery(IT_NDC, yearMonth);
@@ -24,13 +49,25 @@ export async function POST() {
     numberOfRecords = result.numberOfRecords;
     summary.fetched += result.records.length;
 
+    const parsedRecords: ParsedDcndlRecord[] = [];
     for (const rawXml of result.records) {
       const parsed = parseDcndlRecord(rawXml);
       if (!parsed) {
         summary.skipped += 1;
         continue;
       }
-      const outcome = await upsertBook(parsed);
+      parsedRecords.push(parsed);
+    }
+
+    const isbnsMissingCover = parsedRecords
+      .filter((parsed) => parsed.isbn13 && !parsed.coverImageUrl)
+      .map((parsed) => parsed.isbn13 as string);
+
+    const openBdCovers = await fetchOpenBdCovers([...new Set(isbnsMissingCover)]);
+
+    for (const parsed of parsedRecords) {
+      const coverImageUrl = parsed.coverImageUrl ?? (parsed.isbn13 ? (openBdCovers.get(parsed.isbn13) ?? null) : null);
+      const outcome = await upsertBook({ ...parsed, coverImageUrl });
       summary[outcome] += 1;
     }
 
@@ -40,7 +77,7 @@ export async function POST() {
     startRecord = result.nextRecordPosition;
   }
 
-  return NextResponse.json({ yearMonth, ndc: IT_NDC, numberOfRecords, ...summary });
+  return { yearMonth, ndc: IT_NDC, numberOfRecords, ...summary };
 }
 
 async function upsertBook(parsed: ParsedDcndlRecord): Promise<"created" | "updated"> {

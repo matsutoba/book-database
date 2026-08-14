@@ -13,14 +13,14 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-.indexHeader {
-  width: 3rem;
-}
-
 .publisherHeader,
 .dateHeader {
   width: 12rem;
   text-align: center;
+}
+
+.coverHeader {
+  width: 7.5rem;
 }
 
 .row td {
@@ -31,12 +31,6 @@
 
 .row:last-child td {
   border-bottom: none;
-}
-
-.index {
-  color: #c7cbd1;
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
 }
 
 .title {
@@ -63,8 +57,80 @@
   font-variant-numeric: tabular-nums;
 }
 
+.cover {
+  text-align: center;
+}
+
+.coverImage {
+  width: 5.5rem;
+  height: 8rem;
+  object-fit: cover;
+}
+
 .empty {
   padding: 3rem 1.25rem;
   color: #8a8f98;
   text-align: center;
+}
+
+.loading {
+  padding: 1.25rem;
+  color: #8a8f98;
+  text-align: center;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 640px) {
+  .table,
+  .table tbody {
+    display: block;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr auto;
+    grid-template-areas:
+      "cover title title"
+      "cover publisher date";
+    column-gap: 1rem;
+    row-gap: 0.375rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid #f1f2f4;
+  }
+
+  .row:last-child {
+    border-bottom: none;
+  }
+
+  .row td {
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .cover {
+    grid-area: cover;
+  }
+
+  .titleCell {
+    grid-area: title;
+  }
+
+  .publisher {
+    grid-area: publisher;
+    text-align: left;
+  }
+
+  .date {
+    grid-area: date;
+    text-align: right;
+  }
+
+  .publisher,
+  .date {
+    font-size: 0.8125rem;
+  }
 }
