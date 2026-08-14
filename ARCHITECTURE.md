@@ -42,8 +42,10 @@ pnpm exec prisma migrate reset
 ## デプロイ
 
 - 本番は Vercel（Next.js）+ TiDB Cloud（MySQL互換）。
-- TiDB Cloud への接続は TLS 必須。`DATABASE_URL` の末尾に `?ssl=true&connectTimeout=10000` を付与する（Prisma 7 は `@prisma/adapter-mariadb` 経由で `mariadb` ドライバーを使っており、`ssl=true` で標準的なTLS検証が有効になる）。この値は Vercel のプロジェクト環境変数として設定し、リポジトリにはコミットしない。
-  - `mariadb` ドライバーの `connectTimeout` デフォルトは1000msと短く、TLSハンドシェイクを挟むTiDB Cloudへの接続では間に合わず `pool timeout: failed to retrieve a connection from pool after 10000ms`（エラーコード `45028`）になることがある。`connectTimeout` をクエリパラメータで延長して回避する。
+- TiDB Cloud への接続は TLS 必須。`DATABASE_URL` の末尾に `?ssl=true&connectTimeout=10000&sslaccept=strict` を付与する。この値は Vercel のプロジェクト環境変数として設定し、リポジトリにはコミットしない。
+  - `ssl` / `connectTimeout` はアプリ実行時に使う `@prisma/adapter-mariadb`（`mariadb` ドライバー）向けのパラメータ。`connectTimeout` のデフォルトは1000msと短く、TLSハンドシェイクを挟むTiDB Cloudへの接続では間に合わず `pool timeout: failed to retrieve a connection from pool after 10000ms`（エラーコード `45028`）になることがあるため延長する。
+  - `sslaccept=strict` は `prisma migrate deploy` などが使うPrismaのスキーマエンジン（Rust製、`mariadb`ドライバーとは別実装）向け。スキーマエンジンは `ssl=true` を認識しないため、これがないとTLSなしで接続しようとして TiDB Cloud に `Connections using insecure transport are prohibited` として拒否される。
+  - 両方のクエリパラメータは互いに無視されるだけなので、同じURLに共存させて問題ない。
 - `package.json` の `build` スクリプトは `prisma migrate deploy && next build`。Vercelのビルドのたびに未適用のマイグレーションをTiDBへ自動適用する（`postinstall` の `prisma generate` はPrisma Clientのコード生成のみで、テーブル作成は行わない）。
   - Preview環境でも同じ `DATABASE_URL`（本番TiDB）を使っている場合、Previewデプロイのビルド時にも本番DBへマイグレーションが適用される点に注意。Preview用に別クラスタ/別DBを分けたい場合は、Vercel環境変数のスコープをProduction/Previewで分ける。
 
