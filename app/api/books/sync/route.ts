@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { BookSourceType, type Prisma } from "@/lib/generated/prisma/client";
 import { parseDcndlRecord, type ParsedDcndlRecord } from "@/lib/ndl/dcndl";
+import { fetchOpenBdCovers } from "@/lib/openbd/client";
 import { prisma } from "@/lib/prisma";
 import { buildMonthlyNdcQuery, isWithinRecordLimit, searchSru } from "@/lib/ndl/sru";
 
@@ -24,13 +25,25 @@ export async function POST() {
     numberOfRecords = result.numberOfRecords;
     summary.fetched += result.records.length;
 
+    const parsedRecords: ParsedDcndlRecord[] = [];
     for (const rawXml of result.records) {
       const parsed = parseDcndlRecord(rawXml);
       if (!parsed) {
         summary.skipped += 1;
         continue;
       }
-      const outcome = await upsertBook(parsed);
+      parsedRecords.push(parsed);
+    }
+
+    const isbnsMissingCover = parsedRecords
+      .filter((parsed) => parsed.isbn13 && !parsed.coverImageUrl)
+      .map((parsed) => parsed.isbn13 as string);
+
+    const openBdCovers = await fetchOpenBdCovers([...new Set(isbnsMissingCover)]);
+
+    for (const parsed of parsedRecords) {
+      const coverImageUrl = parsed.coverImageUrl ?? (parsed.isbn13 ? (openBdCovers.get(parsed.isbn13) ?? null) : null);
+      const outcome = await upsertBook({ ...parsed, coverImageUrl });
       summary[outcome] += 1;
     }
 
