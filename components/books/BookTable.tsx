@@ -21,14 +21,13 @@ export function BookTable({ initialBooks, initialHasMore }: BookTableProps) {
       <thead>
         <tr>
           <th className={styles.dateHeader}>発行日</th>
-          <th className={styles.indexHeader} aria-hidden="true" />
+          <th className={styles.coverHeader} aria-hidden="true" />
           <th className={styles.titleHeader}>書籍タイトル / 著者</th>
           <th className={styles.publisherHeader}>出版社</th>
-          <th className={styles.coverHeader} aria-hidden="true" />
         </tr>
       </thead>
       <tbody>
-        {books.map((book, index) => (
+        {books.map((book) => (
           <tr key={book.id} className={styles.row}>
             <td className={styles.date}>{formatPublishedDate(book.publishedDate)}</td>
             <td className={styles.cover}>
@@ -46,7 +45,7 @@ export function BookTable({ initialBooks, initialHasMore }: BookTableProps) {
         ))}
         {hasNextPage && (
           <tr ref={sentinelRef}>
-            <td className={styles.loading} colSpan={5}>
+            <td className={styles.loading} colSpan={4}>
               読み込み中...
             </td>
           </tr>
