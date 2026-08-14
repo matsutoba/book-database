@@ -17,7 +17,11 @@ export type SruSearchResult = {
 };
 
 export function buildMonthlyNdcQuery(ndc: string, yearMonth: string): string {
-  return `ndc="${ndc}" and from="${yearMonth}" and until="${yearMonth}"`;
+  const [year, month] = yearMonth.split("-").map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  const from = `${yearMonth}-01`;
+  const until = `${yearMonth}-${String(lastDay).padStart(2, "0")}`;
+  return `ndc="${ndc}" and from="${from}" and until="${until}"`;
 }
 
 export async function searchSru(
