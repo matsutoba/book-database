@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/books/sync",
+      "schedule": "0 20 * * *"
+    }
+  ]
+}

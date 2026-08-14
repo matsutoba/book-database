@@ -38,3 +38,15 @@ pnpm exec prisma migrate reset
 ```
 
 - `prisma migrate dev` はスキーマ差分検出のためにシャドウDBを一時作成する。そのため `DATABASE_URL` の DB ユーザーには `CREATE` 権限が必要（Docker Compose の `MYSQL_USER`/`MYSQL_PASSWORD` で作成されるユーザーはデフォルトでは対象DBのみの権限のため、必要に応じて `GRANT ALL PRIVILEGES ON *.* TO '<user>'@'%';` を付与する）。
+
+## デプロイ
+
+- 本番は Vercel（Next.js）+ TiDB Cloud（MySQL互換）。
+- TiDB Cloud への接続は TLS 必須。`DATABASE_URL` の末尾に `?ssl=true` を付与する（Prisma 7 は `@prisma/adapter-mariadb` 経由で `mariadb` ドライバーを使っており、`ssl=true` で標準的なTLS検証が有効になる）。この値は Vercel のプロジェクト環境変数として設定し、リポジトリにはコミットしない。
+
+### バッチ処理（NDL同期）
+
+- `POST /api/books/sync`（`app/api/books/sync/route.ts`）を毎朝 5:00 (JST) に実行するため、Vercel Cron Jobs を `vercel.json` で設定している。
+  - Vercel Cron は UTC 基準・GETリクエストで叩くため、`schedule` は `0 20 * * *`（前日20:00 UTC = 当日5:00 JST）、ハンドラーには `GET` も実装している。
+- 環境変数 `CRON_SECRET` を設定すると、Vercel が Cron 実行時に `Authorization: Bearer <CRON_SECRET>` を自動付与し、ハンドラー側で検証することで第三者による無認可実行を防ぐ（未設定時はローカル開発用に検証をスキップする）。
+- Vercel Hobby プランは serverless function の実行時間上限が短い（`maxDuration` は最大60秒）ため、`route.ts` に `export const maxDuration = 60` を設定している。NDLの月間該当件数が多い場合はこの上限に収まらずタイムアウトする可能性があり、その場合は Pro プランへの変更や処理の分割を検討する。
