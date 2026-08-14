@@ -31,7 +31,15 @@ export function BookTable({ initialBooks, initialHasMore }: BookTableProps) {
           <tr key={book.id} className={styles.row}>
             <td className={styles.date}>{formatPublishedDate(book.publishedDate)}</td>
             <td className={styles.cover}>
-              {book.coverImageUrl && <img className={styles.coverImage} src={`/api/books/${book.id}/cover`} alt="" />}
+              {book.coverImageUrl && (
+                <a
+                  href={`https://www.amazon.co.jp/s?k=${encodeURIComponent(book.title)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img className={styles.coverImage} src={`/api/books/${book.id}/cover`} alt="" />
+                </a>
+              )}
             </td>
             <td className={styles.titleCell}>
               <div className={styles.title}>
