@@ -1,4 +1,5 @@
 import { BookTable } from "@/components/books/BookTable";
+import { Heading } from "@/components/ui/Heading";
 import { BOOKS_PAGE_SIZE, fetchBookRows } from "@/lib/books";
 import styles from "./page.module.css";
 
@@ -9,6 +10,7 @@ export default async function Home() {
 
   return (
     <main className={styles.main}>
+      <Heading>IT関連書籍リスト</Heading>
       <BookTable initialBooks={rows} initialHasMore={hasMore} />
     </main>
   );
