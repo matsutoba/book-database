@@ -1,0 +1,10 @@
+.noImage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 128px;
+  background-color: #e5e7eb;
+  color: #16181d;
+  font-size: 0.75rem;
+}

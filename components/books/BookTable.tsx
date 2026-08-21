@@ -1,6 +1,7 @@
 "use client";
 
 import type { BookRow } from "@/lib/books";
+import { NoImage } from "@/components/ui/NoImage";
 import styles from "./BookTable.module.css";
 import { useFetchBooks } from "./useFetchBooks";
 
@@ -31,7 +32,7 @@ export function BookTable({ initialBooks, initialHasMore }: BookTableProps) {
           <tr key={book.id} className={styles.row}>
             <td className={styles.date}>{formatPublishedDate(book.publishedDate)}</td>
             <td className={styles.cover}>
-              {book.coverImageUrl && (
+              {book.coverImageUrl ? (
                 <a
                   href={`https://www.amazon.co.jp/s?k=${encodeURIComponent(book.title)}`}
                   target="_blank"
@@ -39,6 +40,8 @@ export function BookTable({ initialBooks, initialHasMore }: BookTableProps) {
                 >
                   <img className={styles.coverImage} src={`/api/books/${book.id}/cover`} alt="" />
                 </a>
+              ) : (
+                <NoImage />
               )}
             </td>
             <td className={styles.titleCell}>
