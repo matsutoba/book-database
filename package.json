@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "docker compose up -d --wait && next dev",
     "build": "prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
