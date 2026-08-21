@@ -20,7 +20,7 @@ export function BookTable({ initialBooks, initialHasMore }: BookTableProps) {
     <table className={styles.table}>
       <thead>
         <tr>
-          <th className={styles.dateHeader}>発行日</th>
+          <th className={styles.dateHeader}>発行月</th>
           <th className={styles.coverHeader} aria-hidden="true" />
           <th className={styles.titleHeader}>書籍タイトル / 著者</th>
           <th className={styles.publisherHeader}>出版社</th>
@@ -68,6 +68,5 @@ function formatPublishedDate(date: Date | null): string {
     return "-";
   }
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  return `${date.getUTCFullYear()}/${month}/${day}`;
+  return `${date.getUTCFullYear()}/${month}`;
 }
